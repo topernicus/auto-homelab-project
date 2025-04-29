@@ -40,8 +40,8 @@ As configured, the project expects the following folder structure on the host:
 
 ## To Do List
 
-- [✓] Create Repo
-- [✓] Update README.md
+- [x] Create Repo
+- [x] Update README.md
 - [ ] Known issue: Group permissions should be _smb-share_
 - [ ] Finish docker integrations (portainer, lazydocker, compose)
 - [ ] Add variable descriptions and constraints
