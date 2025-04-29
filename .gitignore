@@ -1,0 +1,11 @@
+# Ignore local development files
+**/.vscode
+**/.DS_Store
+**/packer_cache
+**/.terraform
+**/.terraform.lock.hcl
+**/terraform.tfstate*
+
+# Secrets, Environment Files
+**/secrets.*
+**/.env

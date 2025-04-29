@@ -1,0 +1,37 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US
+  keyboard:
+    layout: us
+  ssh:
+    install-server: true
+    allow-pw: false
+    disable_root: true
+    ssh_quiet_keygen: true
+    allow_public_ssh_keys: true
+  packages:
+    - qemu-guest-agent
+    - sudo
+    - bat
+    - btop
+    - eza
+    - ncdu
+    - neovim
+    - nnn
+    - cmake
+    - g++
+    - cargo
+    - debootstrap
+    - cifs-utils
+  user-data:
+    package_upgrade: true
+    timezone: America/Chicago
+    users:
+      - name: ubuntu
+        ssh_authorized_keys:
+          - "<your ssh key here>"
+        groups: [adm, cdrom, sudo]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
