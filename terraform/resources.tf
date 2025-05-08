@@ -42,11 +42,11 @@ resource "proxmox_lxc" "samba_container_1" {
     inline = [
       "pct set ${var.samba_container_1.vmid} -features nesting=1,fuse=1",
       "pct set ${var.samba_container_1.vmid} -mp0 ${var.locations.host_root}/${var.locations.container_subdir},mp=/mnt/${var.locations.container_subdir}",
-      "chown -R 101001:101001 ${var.locations.host_root}/${var.locations.container_subdir}/",
-      "chmod -R 2774 ${var.locations.host_root}/${var.locations.container_subdir}/",
+      "chown 101001:101001 ${var.locations.host_root}/${var.locations.container_subdir}/",
+      "chmod 2774 ${var.locations.host_root}/${var.locations.container_subdir}/",
       "pct set ${var.samba_container_1.vmid} -mp1 ${var.locations.host_root}/${var.locations.samba_subdir},mp=/mnt/${var.locations.samba_subdir}",
-      "chown -R 101001:101001 ${var.locations.host_root}/${var.locations.samba_subdir}/",
-      "chmod -R 2774 ${var.locations.host_root}/${var.locations.samba_subdir}/",
+      "chown 101001:101001 ${var.locations.host_root}/${var.locations.samba_subdir}/",
+      "chmod 2774 ${var.locations.host_root}/${var.locations.samba_subdir}/",
       "pct start ${var.samba_container_1.vmid} && sleep 20"
     ]
   }
@@ -291,7 +291,7 @@ resource "proxmox_vm_qemu" "docker_vm_1" {
       "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
       "sudo apt update",
       "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
-      "docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /mnt/${var.locations.container_share}/portainer:/data portainer/portainer-ce:lts"
+      "sudo docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /mnt/${var.locations.container_share}/portainer:/data portainer/portainer-ce:lts"
     ]
   }
 }

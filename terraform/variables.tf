@@ -26,7 +26,7 @@ variable "nonroot_user" {
 
 variable "service_user_passwd" {
   type      = string
-  # sensitive = true
+  sensitive = true
 }
 
 variable "locations" {
