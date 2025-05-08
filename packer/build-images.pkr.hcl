@@ -94,12 +94,19 @@ build {
     ]
   }
 
+  # Provisioning for docker tui
+  provisioner "file" {
+    source      = "../scripts/install_update_lazydocker.sh"
+    destination = "/tmp/install_update_lazydocker.sh"
+  }
+
   # Provisioning the VM Template for additional packages
   provisioner "shell" {
     inline = [
       "cargo install starship@1.20.1 --locked",
       "sudo snap install tldr",
       "sudo snap install distrobuilder --classic",
+      "sudo chmod +x /tmp/install_update_lazydocker.sh && sudo /tmp/install_update_lazydocker.sh",
       "mkdir -p ~/.local/bin",
       "sudo ln -s /usr/bin/batcat /usr/local/bin/bat"
     ]

@@ -43,10 +43,10 @@ resource "proxmox_lxc" "samba_container_1" {
       "pct set ${var.samba_container_1.vmid} -features nesting=1,fuse=1",
       "pct set ${var.samba_container_1.vmid} -mp0 ${var.locations.host_root}/${var.locations.container_subdir},mp=/mnt/${var.locations.container_subdir}",
       "chown -R 101001:101001 ${var.locations.host_root}/${var.locations.container_subdir}/",
-      "chmod -R 744 ${var.locations.host_root}/${var.locations.container_subdir}/",
+      "chmod -R 2774 ${var.locations.host_root}/${var.locations.container_subdir}/",
       "pct set ${var.samba_container_1.vmid} -mp1 ${var.locations.host_root}/${var.locations.samba_subdir},mp=/mnt/${var.locations.samba_subdir}",
       "chown -R 101001:101001 ${var.locations.host_root}/${var.locations.samba_subdir}/",
-      "chmod -R 774 ${var.locations.host_root}/${var.locations.samba_subdir}/",
+      "chmod -R 2774 ${var.locations.host_root}/${var.locations.samba_subdir}/",
       "pct start ${var.samba_container_1.vmid} && sleep 20"
     ]
   }
@@ -77,14 +77,24 @@ resource "proxmox_lxc" "samba_container_1" {
     inline = [
       "sudo net conf addshare ${var.locations.samba_share} /mnt/${var.locations.samba_subdir}/ writeable=y",
       "sudo net conf setparm ${var.locations.samba_share} browseable yes",
-      "sudo net conf setparm ${var.locations.samba_share} \"inherit permissions\" yes",
+      "sudo net conf setparm ${var.locations.samba_share} \"inherit permissions\" no",
       "sudo net conf setparm ${var.locations.samba_share} \"map acl inherit\" yes",
       "sudo net conf setparm ${var.locations.samba_share} \"vfs objects\" acl_xattr",
+      "sudo net conf setparm ${var.locations.samba_share} \"force group\" smb-share",
+      "sudo net conf setparm ${var.locations.samba_share} \"create mask\" 0664",
+      "sudo net conf setparm ${var.locations.samba_share} \"directory mask\" 2774",
+      "sudo net conf setparm ${var.locations.samba_share} \"force create mode\" 0665",
+      "sudo net conf setparm ${var.locations.samba_share} \"force directory mode\" 2775",
       "sudo net conf addshare ${var.locations.container_share} /mnt/${var.locations.container_subdir}/ writeable=y",
       "sudo net conf setparm ${var.locations.container_share} browseable yes",
-      "sudo net conf setparm ${var.locations.container_share} \"inherit permissions\" yes",
+      "sudo net conf setparm ${var.locations.container_share} \"inherit permissions\" no",
       "sudo net conf setparm ${var.locations.container_share} \"map acl inherit\" yes",
       "sudo net conf setparm ${var.locations.container_share} \"vfs objects\" acl_xattr",
+      "sudo net conf setparm ${var.locations.container_share} \"force group\" smb-share",
+      "sudo net conf setparm ${var.locations.container_share} \"create mask\" 0664",
+      "sudo net conf setparm ${var.locations.container_share} \"directory mask\" 2774",
+      "sudo net conf setparm ${var.locations.container_share} \"force create mode\" 0665",
+      "sudo net conf setparm ${var.locations.container_share} \"force directory mode\" 2775",
       "sudo net conf setparm global fruit:encoding native",
       "sudo net conf setparm global fruit:nfs_aces no",
       "sudo net conf setparm global fruit:metadata stream",
@@ -259,32 +269,29 @@ resource "proxmox_vm_qemu" "docker_vm_1" {
     host        = var.docker_vm_1.hostname
   }
 
-  # Provision docker-compose configuration
-  provisioner "file" {
-    source      = "../docker/compose.yml"
-    destination = "/tmp/compose.yml"
-  }
-
-  # Provision container storage
+  # Provision container and media storage
   provisioner "remote-exec" {
     inline = [
       "sudo echo -e 'username=service\npassword=${var.service_user_passwd}\ndomain=WORKGROUP' >> /home/${var.nonroot_user}/.smbcredentials",
       "sudo chmod 0600 /home/${var.nonroot_user}/.smbcredentials",
       "sudo mkdir /mnt/${var.locations.container_share}",
-      "echo '//${var.network.prefix}.${var.samba_container_1.hostid}/${var.locations.container_share} /mnt/${var.locations.container_share} cifs credentials=/home/${var.nonroot_user}/.smbcredentials,uid=1000,gid=1000 0 0' | sudo tee -a /etc/fstab",
+      "sudo mkdir /mnt/${var.locations.samba_share}",
+      "echo '//${var.network.prefix}.${var.samba_container_1.hostid}/${var.locations.container_share} /mnt/${var.locations.container_share} cifs credentials=/home/${var.nonroot_user}/.smbcredentials,nobrl,uid=1000,gid=1000 0 0' | sudo tee -a /etc/fstab",
+      "echo '//${var.network.prefix}.${var.samba_container_1.hostid}/${var.locations.samba_share} /mnt/${var.locations.samba_share} cifs credentials=/home/${var.nonroot_user}/.smbcredentials,uid=1000,gid=1000 0 0' | sudo tee -a /etc/fstab",
       "sudo systemctl daemon-reload",
       "sudo mount -a"
     ]
   }
 
-  # Provision docker application
+  # Provision docker applications
   provisioner "remote-exec" {
     inline = [
       "sudo apt install -y ca-certificates lsb_release",
       "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
       "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
       "sudo apt update",
-      "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+      "sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
+      "docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /mnt/${var.locations.container_share}/portainer:/data portainer/portainer-ce:lts"
     ]
   }
 }
