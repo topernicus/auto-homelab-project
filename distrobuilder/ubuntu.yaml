@@ -155,20 +155,18 @@ actions:
 
       # Create the default user account
       getent group sudo >/dev/null 2>&1 || groupadd --system sudo
-      useradd --create-home -s /bin/bash -G sudo,users -U -u 1000 ubuntu
+      groupadd -g 1001 smb-share
+      useradd --create-home -s /bin/bash -G sudo,users,smb-share -U -u 1000 ubuntu
+      useradd -r -G smb-share -u 1001 service
     variants:
       - default
+      - samba
 
   - trigger: post-packages
     action: |-
       #!/bin/sh
       set -eux
 
-      # Create the user accounts
-      getent group sudo >/dev/null 2>&1 || groupadd --system sudo
-      groupadd -g 1001 smb-share
-      useradd --create-home -s /bin/bash -G sudo,users,smb-share -U -u 1000 ubuntu
-      useradd -r -G smb-share -u 1001 service
       # Configure samba registry
       sed -i "s/global.*/&\ninclude = registry/" /etc/samba/smb.conf
     variants:
