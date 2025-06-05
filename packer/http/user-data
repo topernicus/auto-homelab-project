@@ -21,9 +21,13 @@ autoinstall:
     - nnn
     - cmake
     - g++
+    - git
     - cargo
     - debootstrap
     - cifs-utils
+    - tree
+    - stow
+    - figlet
   user-data:
     package_upgrade: true
     timezone: America/Chicago

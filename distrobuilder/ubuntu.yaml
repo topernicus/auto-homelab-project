@@ -99,11 +99,15 @@ files:
 
   - path: /usr/local/bin/starship
     generator: copy
-    source: /home/ubuntu/.cargo/bin/starship
+    source: /usr/local/bin/starship
 
-  - path: /usr/local/bin/tldr
+  - path: /usr/local/bin/dysk
     generator: copy
-    source: /snap/bin/tldr
+    source: /usr/local/bin/dysk
+
+  - path: /usr/local/bin/colorscript
+    generator: copy
+    source: /usr/local/bin/colorscript
 
   - path: /home/ubuntu/.ssh/authorized_keys
     generator: copy
@@ -121,14 +125,18 @@ packages:
         - openssh-server
         - bat
         - btop
+        - curl
+        - git
         - eza
         - ncdu
         - neovim
         - nnn
+        - tree
+        - stow
+        - figlet
       action: install
 
     - packages:
-        - curl
         - gpg
         - wsdd-server
         - samba
@@ -136,6 +144,16 @@ packages:
       action: install
       variants:
         - samba
+
+    - packages:
+        - va-driver-all
+        - ocl-icd-libopencl1
+        - intel-opencl-icd
+        - vainfo
+        - intel-gpu-tools
+      action: install
+      variants:
+        - igpu
 
   repositories:
     - name: sources.list
@@ -161,6 +179,7 @@ actions:
     variants:
       - default
       - samba
+      - igpu
 
   - trigger: post-packages
     action: |-
@@ -169,8 +188,27 @@ actions:
 
       # Configure samba registry
       sed -i "s/global.*/&\ninclude = registry/" /etc/samba/smb.conf
+
+      # Provision management applications
+      apt install -y --no-install-recommends cockpit
+      curl -fsSL https://repo.45drives.com/key/gpg.asc | tee /usr/share/keyrings/45drives.asc >/dev/null
+      echo "deb [signed-by=/usr/share/keyrings/45drives.asc] https://repo.45drives.com/debian focal main" | tee /etc/apt/sources.list.d/45drives.list >/dev/null
+      apt update
+      apt install -y cockpit-identities cockpit-file-sharing cockpit-navigator
     variants:
       - samba
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Preconfigure some likely settings
+      curl -fsSL https://downloads.plex.tv/plex-keys/PlexSign.key | tee /usr/share/keyrings/PlexSign.asc >/dev/null
+      echo "deb [signed-by=/usr/share/keyrings/PlexSign.asc] https://downloads.plex.tv/repo/deb/ public main" | tee /etc/apt/sources.list.d/plexmediaserver.list >/dev/null
+      sed -i -e 's/^ssl-cert:x:104:plex$/render:x:104:plex/' -e 's/^render:x:108:$/ssl-cert:x:108:/' /etc/group
+    variants:
+      - igpu
 
   - trigger: post-packages
     action: |-
@@ -193,6 +231,10 @@ actions:
       #!/bin/sh
       set -eux
 
+      # Preconfigure LazyVim
+      git clone https://github.com/LazyVim/starter /home/ubuntu/.config/neovim
+      rm -rf /home/ubuntu/.config/nvim/.git
+
       # Make sure the locale is built and functional
       locale-gen en_US.UTF-8
       update-locale LANG=en_US.UTF-8
@@ -211,6 +253,8 @@ actions:
       set -eux
 
       chmod +x /usr/local/bin/starship
+      chmod +x /usr/local/bin/dysk
+      chmod +x /usr/local/bin/colorscript
       ln -s /usr/bin/batcat /usr/local/bin/bat
     types:
       - container

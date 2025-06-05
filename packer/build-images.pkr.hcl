@@ -104,11 +104,22 @@ build {
   provisioner "shell" {
     inline = [
       "cargo install starship@1.20.1 --locked",
+      "sudo cp ~/.cargo/bin/starship /usr/local/bin",
+      "cargo install dysk --locked",
+      "sudo cp ~/.cargo/bin/dysk /usr/local/bin",
       "sudo snap install tldr",
       "sudo snap install distrobuilder --classic",
+      "sudo snap install zellij --classic",
       "sudo chmod +x /tmp/install_update_lazydocker.sh && sudo /tmp/install_update_lazydocker.sh",
       "mkdir -p ~/.local/bin",
-      "sudo ln -s /usr/bin/batcat /usr/local/bin/bat"
+      "sudo ln -s /usr/bin/batcat /usr/local/bin/bat",
+      "sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch",
+      "sudo apt update",
+      "sudo apt install -y fastfetch",
+      "git clone https://github.com/LazyVim/starter ~/.config/nvim",
+      "rm -rf ~/.config/nvim/.git",
+      "git clone https://gitlab.com/dwt1/shell-color-scripts.git /tmp/scs",
+      "sudo make install --directory /tmp/scs"
     ]
   }
 
@@ -134,12 +145,19 @@ build {
       "chmod 700 ~/.ssh",
       "echo \"StrictHostKeyChecking no\" > ~/.ssh/config",
       "chmod 644 ~/.ssh/config",
+      # Default container template
       "sudo distrobuilder build-lxc -o image.architecture=amd64 -o image.release=${var.lxc_template_release} -o image.variant=default /tmp/ubuntu.yaml",
       "echo Renaming rootfs... && mv ./rootfs.tar.xz ./ubuntu-container-${var.lxc_template_release}-amd64-default.tar.xz",
       "echo Transferring... && scp ./ubuntu-container-${var.lxc_template_release}-amd64-default.tar.xz root@${var.proxmox_api.host}:/var/lib/vz/template/cache/ubuntu-container-${var.lxc_template_release}-amd64-default-${timestamp()}.tar.xz",
+      # Samba container template
       "sudo distrobuilder build-lxc -o image.architecture=amd64 -o image.release=${var.lxc_template_release} -o image.variant=samba /tmp/ubuntu.yaml",
       "echo Renaming rootfs... && mv ./rootfs.tar.xz ./ubuntu-container-${var.lxc_template_release}-amd64-samba.tar.xz",
       "echo Transferring... && scp ./ubuntu-container-${var.lxc_template_release}-amd64-samba.tar.xz root@${var.proxmox_api.host}:/var/lib/vz/template/cache/ubuntu-container-${var.lxc_template_release}-amd64-samba-${timestamp()}.tar.xz",
+      # iGPU container template
+      "sudo distrobuilder build-lxc -o image.architecture=amd64 -o image.release=${var.lxc_template_release} -o image.variant=igpu /tmp/ubuntu.yaml",
+      "echo Renaming rootfs... && mv ./rootfs.tar.xz ./ubuntu-container-${var.lxc_template_release}-amd64-igpu.tar.xz",
+      "echo Transferring... && scp ./ubuntu-container-${var.lxc_template_release}-amd64-igpu.tar.xz root@${var.proxmox_api.host}:/var/lib/vz/template/cache/ubuntu-container-${var.lxc_template_release}-amd64-igpu-${timestamp()}.tar.xz",
+      # Wrap things up
       "echo Cleaning up... && sudo rm ./*.tar.xz",
       "ssh-add -d /tmp/ssh_key",
       "rm /tmp/ssh_key"
